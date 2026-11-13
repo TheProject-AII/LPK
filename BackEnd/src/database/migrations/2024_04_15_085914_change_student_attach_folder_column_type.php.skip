@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class ChangeStudentAttachFolderColumnType extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::table('students', function (Blueprint $table) {
+            // Drop the existing column (if any)
+            $table->dropColumn('student_attach_folder');
+            
+            // Add the new column with the desired type
+            $table->string('student_attach_folder', 500)->nullable()->after('student_phone_no');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::table('students', function (Blueprint $table) {
+            // Drop the new column
+            $table->dropColumn('student_attach_folder');
+            
+            // Re-add the old column with the previous type
+            $table->string('student_attach_folder', 15)->nullable()->after('student_phone_no');
+        });
+    }
+}

@@ -1,0 +1,35 @@
+services:
+  # Application
+  app-lpk:
+    container_name: app_lpk
+    build:
+      context: ./docker/services/app
+      dockerfile: app.dockerfile
+    working_dir: /var/www
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www
+    ports:
+      - "9001:9001"
+    networks:
+      - "net"
+  # Web Server
+  web-lpk:
+    container_name: web_lpk
+    build:
+      context: ./docker/services/web
+      dockerfile: web.dockerfile
+    working_dir: /var/www
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www
+    ports:
+      - "7660:80"
+    environment:
+      - VIRTUAL_HOST=lpk-api.teman-koperasi.com
+      - LETSENCRYPT_HOST=lpk-api.teman-koperasi.com
+    networks:
+      - "net"
+networks:
+  net:
+    external: true

@@ -1,0 +1,1 @@
+import{b as o}from"./vuetify.a2c48116.js";import{d as a,b1 as n,h as e}from"./@vue.71345258.js";const l=a({setup(){const t=n("router-view");return()=>e(o,{class:"layout-wrapper layout-blank"},{default:()=>e(t)})}});export{l as default};

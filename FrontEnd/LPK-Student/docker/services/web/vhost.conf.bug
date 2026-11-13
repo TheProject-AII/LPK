@@ -1,0 +1,21 @@
+server {
+    listen 80;
+    client_max_body_size 1000m;
+    index index.php index.html index.htm default.php default.htm default.html;
+    root /var/www;
+
+    #Vue router configuration
+    location / {
+       try_files $uri $uri/ @router;
+       index index.html;
+      try_files $uri $uri/ /index.html;
+        
+    }
+    #location @router {
+   #     rewrite ^.*$ /index.html last;
+  #  }
+  #location / {
+   # try_files $uri $uri/ /index.html;
+  #}
+
+}

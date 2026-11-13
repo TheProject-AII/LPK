@@ -1,0 +1,1 @@
+import{a as u,o as s,b as a}from"./@vue.1e4bcba5.js";function m(){const e=u(0),o=u(0);function n(t){e.value=t.pageX,o.value=t.pageY}return s(()=>window.addEventListener("mousemove",n)),a(()=>window.removeEventListener("mousemove",n)),{x:e,y:o}}export{m as u};

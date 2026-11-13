@@ -1,0 +1,256 @@
+
+name: Deploy LPK (PROD/STG/DEV)
+
+on:
+  push:
+    branches:
+      - production
+      - staging
+      - development
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-lpk-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Map branch -> env + SSH creds
+        id: map
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "${GITHUB_REF_NAME}" in
+            staging)
+              echo "ENVNAME=stg" >> "$GITHUB_OUTPUT"
+              echo "SSH_SRV=${{ vars.IP_STAGING }}" >> "$GITHUB_OUTPUT"
+              echo "SSH_USER=${{ secrets.SSH_USER_STG }}" >> "$GITHUB_OUTPUT"
+              echo "SSH_PW=${{ secrets.SSH_PW_STG }}" >> "$GITHUB_OUTPUT"
+              ;;
+            development)
+              echo "ENVNAME=dev" >> "$GITHUB_OUTPUT"
+              echo "SSH_SRV=${{ vars.IP_DEVELOPMENT }}" >> "$GITHUB_OUTPUT"
+              echo "SSH_USER=${{ secrets.SSH_USER_DEV }}" >> "$GITHUB_OUTPUT"
+              echo "SSH_PW=${{ secrets.SSH_PW_DEV }}" >> "$GITHUB_OUTPUT"
+              ;;
+            production)
+              echo "ENVNAME=prod" >> "$GITHUB_OUTPUT"
+              echo "SSH_SRV=${{ vars.IP_PRODUCTION }}" >> "$GITHUB_OUTPUT"
+              echo "SSH_USER=${{ secrets.SSH_USER_PROD }}" >> "$GITHUB_OUTPUT"
+              echo "SSH_PW=${{ secrets.SSH_PW_PROD }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported branch: ${GITHUB_REF_NAME}"
+              exit 1
+              ;;
+          esac
+
+      - name: Run restricted-git.sh on server (LPK)
+        env:
+          SERVER: ${{ steps.map.outputs.SSH_SRV }}
+          SSH_PORT: 2011
+          SSH_USER: ${{ steps.map.outputs.SSH_USER }}
+          SSH_PW:   ${{ steps.map.outputs.SSH_PW }}
+          ENVNAME:  ${{ steps.map.outputs.ENVNAME }} # Mengirim 'prod', 'stg', atau 'dev'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "🚀 Starting Deployment for LPK - Environment: $ENVNAME"
+
+          # Menjalankan script di server dengan 2 argumen:
+          # Argumen 1: LPK (Nama Project)
+          # Argumen 2: $ENVNAME (stg/dev/prod)
+          # Ini akan mentrigger fungsi ci_mode() di dalam script shell.
+
+          sshpass -p "$SSH_PW" ssh \
+            -o StrictHostKeyChecking=no \
+            -o LogLevel=ERROR \
+            -p "$SSH_PORT" \
+            "$SSH_USER@$SERVER" \
+            "LPK $ENVNAME"
+
+          echo "✅ Deployment finished successfully."
+
+
+
+
+
+
+
+# ------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+# name: Deploy LPK (PROD/STG/DEV)
+
+# on:
+#   push:
+#     branches:
+#       - production
+#       - staging
+#       - development
+#   workflow_dispatch: {}
+
+# concurrency:
+#   group: deploy-mccs-${{ github.ref_name }}
+#   cancel-in-progress: true
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 30
+
+#     steps:
+#       - name: Install sshpass
+#         run: sudo apt-get update && sudo apt-get install -y sshpass
+
+#       - name: Map branch -> env + SSH creds
+#         id: map
+#         shell: bash
+#         run: |
+#           set -euo pipefail
+
+#           case "${GITHUB_REF_NAME}" in
+#             staging)
+#               echo "ENVNAME=stg" >> "$GITHUB_OUTPUT"
+#               echo "SSH_SERVER=${{ vars.IP_STAGING }}" >> "$GITHUB_OUTPUT"
+#               echo "SSH_USER=${{ secrets.SSH_USER_STG }}" >> "$GITHUB_OUTPUT"
+#               echo "SSH_PW=${{ secrets.SSH_PW_STG }}" >> "$GITHUB_OUTPUT"
+#               ;;
+#             development)
+#               echo "ENVNAME=dev" >> "$GITHUB_OUTPUT"
+#               echo "SSH_SERVER=${{ vars.IP_DEVELOPMENT }}" >> "$GITHUB_OUTPUT"
+#               echo "SSH_USER=${{ secrets.SSH_USER_DEV }}" >> "$GITHUB_OUTPUT"
+#               echo "SSH_PW=${{ secrets.SSH_PW_DEV }}" >> "$GITHUB_OUTPUT"
+#               ;;
+#             production)
+#               echo "ENVNAME=prod" >> "$GITHUB_OUTPUT"
+#               echo "SSH_SERVER=${{ vars.IP_PRODUCTION }}" >> "$GITHUB_OUTPUT"
+#               echo "SSH_USER=${{ secrets.SSH_USER_PROD }}" >> "$GITHUB_OUTPUT"
+#               echo "SSH_PW=${{ secrets.SSH_PW_PROD }}" >> "$GITHUB_OUTPUT"
+#               ;;
+#             *)
+#               echo "Unsupported branch: ${GITHUB_REF_NAME}"
+#               exit 1
+#               ;;
+#           esac
+
+#       - name: Run restricted-git.sh on server (LPK)
+#         env:
+#           SERVER: ${{ steps.map.outputs.SSH_SERVER }}
+#           SSH_PORT: 2011
+
+#           SSH_USER: ${{ steps.map.outputs.SSH_USER }}
+#           SSH_PW:   ${{ steps.map.outputs.SSH_PW }}
+#           ENVNAME:  ${{ steps.map.outputs.ENVNAME }}
+
+#           REMOTE_SCRIPT: /usr/local/bin/restricted-git.sh
+#         shell: bash
+#         run: |
+#           set -euo pipefail
+
+#           # Pastikan argumen masuk benar: jalankan via bash
+#           sshpass -p "$SSH_PW" ssh \
+#             -o StrictHostKeyChecking=no \
+#             -o LogLevel=ERROR \
+#             -p "$SSH_PORT" \
+#             "$SSH_USER@$SERVER" \
+#             "bash '$REMOTE_SCRIPT' LPK '$ENVNAME'"
+# ------------------------------------------------------------------------------
+
+# name: Deploy LPK
+
+# on:
+#   push:
+#     branches:
+#       - staging
+#       - development
+#       - production
+#   pull_request:
+#     branches:
+#       - staging
+#       - development
+#       - production
+
+# jobs:
+#   deploy:
+#     name: Deploy LPK App to Server
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # Step 1: Checkout the latest code from the repository
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
+
+#       # Step 2: Install sshpass to enable SSH with password
+#       - name: Install sshpass
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y sshpass
+
+#       # Step 3: Define server and directory based on branch
+#       - name: Set server details
+#         id: server-details
+#         run: |
+#           if [[ "${{ github.ref_name }}" == "staging" ]]; then
+#             echo "SERVER=${{ vars.IP_STAGING }}" >> $GITHUB_ENV
+#             echo "DIRECTORY=${{ vars.DIR_STG }}" >> $GITHUB_ENV
+#           elif [[ "${{ github.ref_name }}" == "development" ]]; then
+#             echo "SERVER=${{ vars.IP_DEVELOPMENT }}" >> $GITHUB_ENV
+#             echo "DIRECTORY=${{ vars.DIR_DEV }}" >> $GITHUB_ENV
+#           elif [[ "${{ github.ref_name }}" == "production" ]]; then
+#             echo "SERVER=${{ vars.IP_PRODUCTION}}" >> $GITHUB_ENV
+#             echo "DIRECTORY=${{ vars.DIR_PROD }}" >> $GITHUB_ENV
+#           fi
+
+#       - name: Deploy application
+#         run: |
+#           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o LogLevel=ERROR -o StrictHostKeyChecking=no gmsindonesia@${{ env.SERVER }} -p 2011 << 'EOF'
+
+#             # Menambahkan NOPASSWD di sudoers
+#             echo "gmsindonesia ALL=(ALL) NOPASSWD: /bin/chown, /bin/chmod" | sudo tee /etc/sudoers.d/gmsindonesia > /dev/null
+
+#             # Masuk ke direktori aplikasi Laravel
+#             cd ${{ env.DIRECTORY }}
+
+#             # Tentukan nama container secara dinamis berdasarkan branch
+#             if [[ "${{ github.ref_name }}" == "production" ]]; then
+#               eval "$(ssh-agent -s)"
+#               ssh-add ~/.ssh/lpk_key
+#               CONTAINER_NAME="app_lpk"
+#             elif [[ "${{ github.ref_name }}" == "staging" ]]; then
+#               eval "$(ssh-agent -s)"
+#               ssh-add ~/.ssh/id_gmsi
+#               CONTAINER_NAME="app_lpk"
+#             else
+#               eval "$(ssh-agent -s)"
+#               ssh-add ~/.ssh/id_gmsi
+#               CONTAINER_NAME="lpk_api_developemnt-app-lpk-dev-1"
+#             fi
+
+#             # Tarik perubahan terbaru dari branch yang di-deploy
+#             git pull origin ${{ github.ref_name }}
+
+#             # Berikan izin pada direktori storage dan bootstrap/cache
+#             sudo chown -R www-data:www-data storage bootstrap/cache
+#             sudo chmod -R 775 storage bootstrap/cache
+
+#             # Instal/update dependencies Composer di dalam container
+#             docker exec -i $CONTAINER_NAME composer install --no-interaction --prefer-dist --optimize-autoloader
+
+#             # Clear cache untuk konfigurasi, route, dan view di dalam container
+#             docker exec -i $CONTAINER_NAME php artisan config:cache
+#             docker exec -i $CONTAINER_NAME php artisan route:cache
+#             docker exec -i $CONTAINER_NAME php artisan view:cache
+
+#             echo "Deployment completed successfully for branch: ${{ github.ref_name }}."
+#           EOF
+

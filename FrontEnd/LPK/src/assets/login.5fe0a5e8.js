@@ -1,0 +1,1 @@
+import{_ as o}from"./vue3-html2pdf.76133477.js";import{e,f as r}from"./@vue.71345258.js";import"./@e965.f9403bb3.js";import"./html2canvas.c4a43e03.js";const t={};function n(c,s){return e(),r("h1",null,"Login")}const m=o(t,[["render",n]]);export{m as default};
